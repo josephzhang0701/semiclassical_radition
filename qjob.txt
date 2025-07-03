@@ -1,0 +1,21 @@
+#!/bin/bash
+# ------------------------------------
+# the job name
+#$ -N runparticle_nr
+#
+# Execute the job from the current working directory. 
+#$ -cwd
+#
+# Define the path used for the standard error stream.
+#$ -e ./strerr_out/$JOB_NAME.$JOB_ID.stderr.txt
+#
+# Define the path used for the standard out stream.
+#$ -o ./strerr_out/$JOB_NAME.$JOB_ID.stdout.txt
+#
+#The mail address to which you want status notifications about your
+#job to be delivered to (optional)
+#$ -M Jian-Xing.Li@mpi-hd.mpg.de
+#
+
+ulimit -s 10000000
+./irun.x particle_nr

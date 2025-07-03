@@ -1,0 +1,12 @@
+#!/bin/bash -l
+
+#PBS -N job_particle_nr
+#PBS -o strerr_out
+#PBS -e strerr_out
+#PBS -l nodes=1:ppn=1
+#PBS -r y
+#PBS -m abe
+cd $PBS_O_WORKDIR
+echo $PBS_O_WORKDIR
+./irun.x particle_nr
+
