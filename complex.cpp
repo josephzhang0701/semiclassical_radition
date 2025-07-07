@@ -1,6 +1,8 @@
 #include <math.h>
-#include <complex.h>
-typedef struct FCOMPLEX {double r,i;} fcomplex;
+// #include <complex.h>
+//typedef struct FCOMPLEX {double r,i;} fcomplex;
+#include "complex.h"
+
 fcomplex Cadd(fcomplex a, fcomplex b)
 {
 fcomplex c;
