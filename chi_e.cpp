@@ -11,7 +11,8 @@
 
 
 ret_em_prob Wr(const double* g,double t){
-
+// FIXME: 这是个返回值函数, 返回得到加速度以及chi
+//TODO: 电磁波要随着main函数一起修改
 //loading the fields
 
 double Ex,Ey,Ez,Bx,By,Bz;
@@ -33,16 +34,12 @@ double j2=grg*Ex+g[3]*Bz-g[5]*By;//grg*E+p^B
 double j3=grg*Ey+g[5]*Bx-g[1]*Bz;
 double j4=grg*Ez+g[1]*By-g[3]*Bx;
 
-
-  double chi_r=hb*sqrt(eq*eq)/me/me/c/c/c*sqrt(j2*j2+j3*j3+j4*j4-j1*j1);
-
+double chi_r=hb*sqrt(eq*eq)/me/me/c/c/c*sqrt(j2*j2+j3*j3+j4*j4-j1*j1);
 double a1= eq/me/c/grg*(j2/grg-j1*g[1]/grg/grg);
-
 double a2= eq/me/c/grg*(j3/grg-j1*g[3]/grg/grg);
-
 double a3= eq/me/c/grg*(j4/grg-j1*g[5]/grg/grg);
 
-
+// XXX: 返回值
 
 internal_result.chi_r =  chi_r;
 internal_result.ax =  a1;

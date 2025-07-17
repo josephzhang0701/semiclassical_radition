@@ -3,7 +3,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_complex.h>
 #include <gsl/gsl_complex_math.h>
-
+// TODO: 全高斯单位制
 
 double pi=M_PI;                        //Defininition of Pi  
 double lambda0=5.2759e-05;//0.4e-4;//5.2759e-05;//0.8e-4;     //wavelength
@@ -31,7 +31,7 @@ double eps0=w0/zr;   //lax fields variable
 double s=ww0*tp/(2.0*sqrt(2.0*log(2.0)));//s=ww0*tp/sqrt(2.0*log(2.0));    //s= 8.004669384955495 if lambda0=1e-4;
 double shift=3.0;//5.0;
 double theta_m=shift*s;
-double q=0.707;
+double q=0.707;     //峰值强度, 可以改, 无量纲, 文章里的eta用的是平均强度
 double q1=1.0/(2.0*sqrt(2.0));//1.0/2.0*(sqrt(2.0));//1.0;//2.0;
 double E0=q*me*c*ww0/sqrt(eq*eq);
 //double E02=q1*me*c*ww0/sqrt(eq*eq);
@@ -51,11 +51,11 @@ double cylinder_start=0.0;   // the start position of cylinder in longitudinal d
 double cylinder_end=5.0*lambda0;   // the end position of cylinder in longitudinal direction 
 double cylinderradius=1.0*lambda0;   // radius of the cylinder 
 double radius_y=1.0*lambda0;                
-double Ekinmean=20000.0*mev;//8000.0*mev;           // mean initial kinetic energy of the electrons 
+double Ekinmean=20000.0*mev;        //8000.0*mev; // mean initial kinetic energy of the electrons
 double Wk=1022.0*mev/me/c/c;//8000.0*mev/me/c/c;            
-double Ekinsigma=0.0;//Ekinmean*0.02;  // standard deviation of initial kin. energies 
-double anglemean=180.0/180.0*pi;           // mean initial injection angle of electron bunch 
-double anglesigma=0.0;//0.02;  // standard deviation of initial injection angle of electron bunch 
+double Ekinsigma=0.0;//Ekinmean*0.02; // standard deviation of initial kin. energies
+double anglemean=180.0/180.0*pi;           // mean initial injection angle of an electron bunch
+double anglesigma=0.0;//0.02;  // standard deviation of an initial injection angle of electron bunch
 
 
 int NP=1;
