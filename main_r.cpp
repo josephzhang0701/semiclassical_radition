@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
                 TIrx[idx] = TIry[idx] = TIrz[idx] = 0.0;
                 TIix[idx] = TIiy[idx] = TIiz[idx] = 0.0;
                 TIr_J[idx] = TIi_J[idx] = 0.0;
-            }
+    }
 
     int nnt = 1;    //hard code 粒子数, 电子片位置可以设计
     // TODO: 大量粒子模拟的时候需要改成外面传入
