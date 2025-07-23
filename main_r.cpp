@@ -18,6 +18,7 @@
 
 #include "const.h"
 #include "vector3d.h" //点乘叉乘并矢
+#include "linespace.h"
 //下面是祖传代码, 不一定用到
 #include "chi_e.h"
 #include "fresnel.h"
@@ -25,23 +26,23 @@
 using namespace std;
 using namespace SCATMECH;
 
-// ODE definition
-int func(double t, const double g[], double dg[], void* params) {
-    double Ex, Ey, Ez, Bx, By, Bz;
+inline void get_fields(double t, const double g[], double& Ex, double& Ey, double& Ez, double& Bx, double& By, double& Bz) {
     double theta = ww0*t + k*g[4];
-
-    // 这是输入的电磁波, 目前是一维无限大平面波
-    //TODO: 加时间包络
-    // 默认沿z
-    Ex = E0*cos(theta);
+    Ex = E0 * cos(theta);
     Ey = 0.0;
     Ez = 0.0;
     Bx = 0.0;
     By = -Ex;
     Bz = 0.0;
+}
+
+// ODE definition
+int func(double t, const double g[], double dg[], void* params) {
+    double Ex, Ey, Ez, Bx, By, Bz;
+    get_fields(t, g, Ex, Ey, Ez, Bx, By, Bz);
 
     ret_em_prob parameter_em_per_step;
-    parameter_em_per_step=Wr(g,t);
+    parameter_em_per_step = Wr(g, t, Ex, Ey, Ez, Bx, By, Bz);
 
     double vb = sqrt(g[1]*g[1] + g[3]*g[3] + g[5]*g[5]);
     double grg = sqrt(vb*vb + 1.0);
@@ -56,24 +57,24 @@ int func(double t, const double g[], double dg[], void* params) {
     return GSL_SUCCESS;
 }
 
-vector<double> linespace(double start, double ed, int num) {
-    // catch rarely, throw often
-    if (num < 2) {
-        throw new exception();
-    }
-    int partitions = num - 1;
-    vector<double> pts;
-    // length of each segment
-    double length = (ed - start) / partitions;
-    // first, not to change
-    pts.push_back(start);
-    for (int i = 1; i < num - 1; i ++) {
-        pts.push_back(start + i * length);
-    }
-    // last, not to change
-    pts.push_back(ed);
-    return pts;
-}
+//vector<double> linespace(double start, double ed, int num) {
+//    // catch rarely, throw often
+//    if (num < 2) {
+//        throw new exception();
+//    }
+//    int partitions = num - 1;
+//    vector<double> pts;
+//    // length of each segment
+//    double length = (ed - start) / partitions;
+//    // first, not to change
+//    pts.push_back(start);
+//    for (int i = 1; i < num - 1; i ++) {
+//        pts.push_back(start + i * length);
+//    }
+//    // last, not to change
+//    pts.push_back(ed);
+//    return pts;
+//}
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -91,16 +92,26 @@ int main(int argc, char* argv[]) {
     ofstream fout1(fn1.str()), fout2(fn2.str()), fout3(fn3.str());
 
     // grid sizes
-    int i_m1 = 100;
-    int j_m1 = 100;
-    int k_m1 = 100;
+    int i_m1 = 200;
+    int j_m1 = 200;
+    int k_m1 = 200;
 
     // linspace grids
     double rr0 = (Ekinmean/(me*c*c)) + 1.0;     //TODO: rr0好像是gamma_initial
     //TODO: 网格选择的讲究, Compton Scattering光斑大小
-    vector<double> x_list = linespace(-7.0/rr0, 7.0/rr0, i_m1);
-    vector<double> y_list = linespace(-7.0/rr0, 7.0/rr0, j_m1);
-    vector<double> w_list = linespace(1e-7*rr0*me*c*c/hb, 0.9999999*rr0*me*c*c/hb, k_m1);   //避免除以0
+//    vector<double> x_list = linespace(-4.5/rr0, 4.5/rr0, i_m1);
+//    vector<double> y_list = linespace(-4.5/rr0, 4.5/rr0, j_m1);
+//    vector<double> w_list = linespace(1e-7*rr0*me*c*c/hb, 0.9999999*rr0*me*c*c/hb, k_m1);   //避免除以0
+
+
+    auto x_list = linespace(-4.5/rr0, 4.5/rr0, i_m1).generate();
+    auto y_list = linespace(-4.5/rr0, 4.5/rr0, j_m1).generate();
+    auto w_list = linespace(
+            1e-7*rr0*me*c*c/hb,
+            0.9999999*rr0*me*c*c/hb,
+            k_m1
+    ).generate();
+
 
     double dtx = x_list[1] - x_list[0];
     double dty = y_list[1] - y_list[0];
@@ -126,12 +137,12 @@ int main(int argc, char* argv[]) {
                 TIr_J[idx] = TIi_J[idx] = 0.0;
             }
 
-    int nnt = 2;    //hard code 粒子数, 电子片位置可以设计
+    int nnt = 1;    //hard code 粒子数, 电子片位置可以设计
     // TODO: 大量粒子模拟的时候需要改成外面传入
-    for (int tth = 1; tth < nnt; ++tth) {
+    for (int tth = 1; tth <= nnt; ++tth) {
         // tth 保证所有核心一起启动
         //particle_nr2 是核心数, 提交任务传来的
-        int particle_nr2 = tth + (particle_nr - 1)*(nnt - 1); // TODO: 问一下这个nnt和粒子数有无关系
+        int particle_nr2 = tth + (particle_nr - 1)*(nnt - 1);
 
         // GSL ODE setup
         const gsl_odeiv_step_type *T = gsl_odeiv_step_rkf45;
@@ -142,10 +153,7 @@ int main(int argc, char* argv[]) {
 
         double ww;
         double ti = 0.0;
-        double tf = 7.5*tp0;//100.0*tp0;//tp0*120.0;
-//        // lambda0=5.2759e-05;//wavelength
-//        // ww0=k*c;           // laser frequency
-//        // tp0=lambda0/c;     //2.6685fs
+        double tf = 7.5*tp0;        //tp0==lambda0/c
         double dt = 0.001*tp0;
         double t;
         double g[6];
@@ -194,7 +202,7 @@ int main(int argc, char* argv[]) {
         double ax, ay, az, nx, ny, nz;
         double www,tx,ty;
 
-        double Ex,theta;
+        double Ex, Ey, Ez, Bx, By, Bz, theta;
 
         t=ti;
 
@@ -212,7 +220,9 @@ int main(int argc, char* argv[]) {
             // trajectory output
             Pe = sqrt(g[1]*g[1] + g[3]*g[3] + g[5]*g[5]);
             grg = sqrt(g[1]*g[1] + g[3]*g[3] + g[5]*g[5] + 1.0); //gamma
-            ret_em_prob parameter_em_per_step=Wr(g,t);
+
+            get_fields(t, g, Ex, Ey, Ez, Bx, By, Bz);
+            ret_em_prob parameter_em_per_step = Wr(g, t, Ex, Ey, Ez, Bx, By, Bz);
             ax=parameter_em_per_step.ax;
             ay=parameter_em_per_step.ay;
             az=parameter_em_per_step.az;

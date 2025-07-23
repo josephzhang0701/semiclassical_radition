@@ -3,7 +3,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_complex.h>
 #include <gsl/gsl_complex_math.h>
-// TODO: 全高斯单位制
+// TODO: 全高斯单位制 cm g s
 
 double pi=M_PI;                        //Defininition of Pi  
 double lambda0=5.2759e-05;//0.4e-4;//5.2759e-05;//0.8e-4;     //wavelength
@@ -17,7 +17,7 @@ double phase0=0.0/180.0*pi;  // initial phase of laser pulse
 
 double electronm=9.1093826e-28;     //electron mass
 double eq0=4.80320441e-10;          //electron electric quantity
-double mev=1.60217653e-6;           // MeV in the unit of Joule
+double mev=1.60217653e-6;           // MeV in the unit of ergs, 1 Joule == 1e7 ergs
 
 double me=1.0*electronm;    // mass of particle
 double eq=-1.0*eq0;        // electric quantity of particle
@@ -32,6 +32,7 @@ double s=ww0*tp/(2.0*sqrt(2.0*log(2.0)));//s=ww0*tp/sqrt(2.0*log(2.0));    //s= 
 double shift=3.0;//5.0;
 double theta_m=shift*s;
 double q=0.707;     //峰值强度, 可以改, 无量纲, 文章里的eta用的是平均强度
+// rms == 0.707 * peak
 double q1=1.0/(2.0*sqrt(2.0));//1.0/2.0*(sqrt(2.0));//1.0;//2.0;
 double E0=q*me*c*ww0/sqrt(eq*eq);
 //double E02=q1*me*c*ww0/sqrt(eq*eq);
@@ -60,17 +61,6 @@ double anglesigma=0.0;//0.02;  // standard deviation of an initial injection ang
 
 int NP=1;
 int NS=15e3;		
-
-
-
-
-
-
-
-
-
-
-
 
 
 
