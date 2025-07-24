@@ -21,7 +21,7 @@ using namespace std;
 using namespace SCATMECH;
 
 // =================== 文件名后缀定义 ===================
-const std::string output_suffix = "double_";  // 可根据需要设为任何字符串，比如"_caseA"
+const std::string output_suffix = "dual_thin_";  // 可根据需要设为任何字符串，比如"_caseA"
 
 // =================== Verbose Level 控制 ===================
 // 0: No output except fatal errors
@@ -36,16 +36,16 @@ inline double get_t0() { return 0.0; }
 inline double get_dt() { return 0.001 * tp0; }
 inline double get_tf() { return 7.5   * tp0; }
 
-constexpr int i_m1 = 300, j_m1 = 300, freq_m1 = 100;
+constexpr int i_m1 = 300, j_m1 = 300, freq_m1 = 300;
 constexpr size_t N_GRID = static_cast<size_t>(i_m1) * j_m1 * freq_m1;
 
 // ========== Grid & Physics Parameters ==========
-static double el_gamma_ini = (Ekinmean / (me * c * c)) + 1.0;
+static double el_gamma_ini = (Ekinmean / me_c2) + 1.0;
 static const auto x_list = linespace(-7.5/el_gamma_ini, 7.5/el_gamma_ini, i_m1).generate();
 static const auto y_list = linespace(-7.5/el_gamma_ini, 7.5/el_gamma_ini, j_m1).generate();
 static const auto freq_list = linespace(
-        1e-7*el_gamma_ini*me*c*c/hb,
-        (1-1e-7)*el_gamma_ini*me*c*c/hb,
+        1e-7*el_gamma_ini * me_c2/hb,
+        (1-1e-7)*el_gamma_ini * me_c2/hb,
         freq_m1
 ).generate();
 
@@ -177,7 +177,7 @@ int main() {
     // ===== memory allocate with alignment & restrict =====
     double * __restrict TIrx, * __restrict TIry, * __restrict TIrz;
     double * __restrict TIix, * __restrict TIiy, * __restrict TIiz;
-    double * __restrict TIr_J, * __restrict TIi_J;
+    double * __restrict TJr, * __restrict TJi;
     auto alloc_aligned = [&](size_t n){
         void *p;
         posix_memalign(&p, 64, n * sizeof(double));
@@ -190,8 +190,8 @@ int main() {
     TIix   = alloc_aligned(N_GRID);
     TIiy   = alloc_aligned(N_GRID);
     TIiz   = alloc_aligned(N_GRID);
-    TIr_J  = alloc_aligned(N_GRID);
-    TIi_J  = alloc_aligned(N_GRID);
+    TJr  = alloc_aligned(N_GRID);
+    TJi  = alloc_aligned(N_GRID);
 
     // --- 6. Main Simulation Loop ---
     std::cout << "[LOG] Starting main simulation loop ..." << std::endl;
@@ -262,7 +262,7 @@ int main() {
                                                          - (0.5/(el_gamma_ini*el_gamma_ini) - 0.5*(th_x*th_x+th_y*th_y) - delta_vz)*ay) );
                         double small_J = inv_tmp2*(th_x*ax + th_y*ay + az);
 
-                        double k_mu_x_mu = (el_gamma_ini * the_freq*hb/me/c/c)/(el_gamma_ini - the_freq*hb/me/c/c) *
+                        double k_mu_x_mu = (el_gamma_ini * the_freq)/(el_gamma_ini - the_freq*hb/me_c2) *
                                            ((0.5/(el_gamma_ini*el_gamma_ini) + 0.5*(th_x*th_x+th_y*th_y))*tNext
                                             - delta_z - th_x*gv[0]/c - th_y*gv[2]/c);
 
@@ -284,8 +284,8 @@ int main() {
                     TIix[idx] += sum_fx_i * dt;
                     TIiy[idx] += sum_fy_i * dt;
                     TIiz[idx] += sum_fz_i * dt;
-                    TIr_J[idx] += sum_Jr * dt;
-                    TIi_J[idx] += sum_Ji * dt;
+                    TJr[idx] += sum_Jr * dt;
+                    TJi[idx] += sum_Ji * dt;
                 }
             }
         }
@@ -331,18 +331,18 @@ int main() {
         for (int i = 0; i < i_m1; ++i) {
             for (int j = 0; j < j_m1; ++j) {
                 size_t idx = IDX(i, j, ki);
-                double rr02 = el_gamma_ini - hb * freq_list[ki] / me / c / c;
+                double rr02 = el_gamma_ini - hb * freq_list[ki] / me_c2;
                 double C = eq * eq / 4.0 / pi / pi / hb;
                 double D1 = (rr02*rr02 + el_gamma_ini*el_gamma_ini) / (2.0 * el_gamma_ini*el_gamma_ini);
-                double D2 = (hb * freq_list[ki] / me / c / c);
+                double D2 = (hb * freq_list[ki] / me_c2);
                 D2 = D2*D2 / (2.0 * el_gamma_ini*el_gamma_ini*el_gamma_ini*el_gamma_ini);
                 Vector3D<double> Ireal{TIrx[idx], TIry[idx], TIrz[idx]};
                 Vector3D<double> Iimag{TIix[idx], TIiy[idx], TIiz[idx]};
-                double Jreal = TIr_J[idx], Jimag = TIi_J[idx];
+                double Jreal = TJr[idx], Jimag = TJi[idx];
                 PP += C * (D1 * (dot(Ireal, Ireal) + dot(Iimag, Iimag)) + D2 * (Jreal*Jreal + Jimag*Jimag)) * dtx * dty;
             }
         }
-        fprintf(fout1, "%.15e %.15e\n", hb * freq_list[ki] / me / c / c / el_gamma_ini, PP);
+        fprintf(fout1, "%.15e %.15e\n", hb * freq_list[ki] / me_c2 / el_gamma_ini, PP);
     }
     fclose(fout1);
     std::cout << "[LOG] Spectra calculation finished." << std::endl;
@@ -361,14 +361,14 @@ int main() {
             double PP = 0.0;
             for (int ki = 0; ki < freq_m1; ++ki) {
                 size_t idx = IDX(i, j, ki);
-                double rr02 = el_gamma_ini - hb * freq_list[ki] / me / c / c;
+                double rr02 = el_gamma_ini - hb * freq_list[ki] / me_c2;
                 double C = eq * eq / 4.0 / pi / pi;
                 double D1 = (rr02*rr02 + el_gamma_ini*el_gamma_ini) / (2.0 * el_gamma_ini*el_gamma_ini);
-                double D2 = (hb * freq_list[ki] / me / c / c);
+                double D2 = (hb * freq_list[ki] / me_c2);
                 D2 = D2*D2 / (2.0 * el_gamma_ini*el_gamma_ini*el_gamma_ini*el_gamma_ini);
                 Vector3D<double> Ireal{TIrx[idx], TIry[idx], TIrz[idx]};
                 Vector3D<double> Iimag{TIix[idx], TIiy[idx], TIiz[idx]};
-                double Jreal = TIr_J[idx], Jimag = TIi_J[idx];
+                double Jreal = TJr[idx], Jimag = TJi[idx];
                 PP += C * (D1 * (dot(Ireal, Ireal) + dot(Iimag, Iimag)) + D2 * (Jreal*Jreal + Jimag*Jimag)) * dw;
             }
             fprintf(fout2, "%.8f %.8f %.15e\n", x_list[i], y_list[j], PP);

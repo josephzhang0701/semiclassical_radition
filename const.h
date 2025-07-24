@@ -15,6 +15,7 @@ constexpr double electronm=9.1093826e-28;     //electron mass
 constexpr double eq0=4.80320441e-10;          //electron electric quantity
 constexpr double mev=1.60217653e-6;           // MeV in the unit of ergs, 1 Joule == 1e7 ergs
 
+constexpr double me_c2 = 8.1871047868e-07;
 
 const double k=2.0*pi/lambda0;   // wave vector
 const double ww0=k*c;          // laser frequency
