@@ -1,5 +1,5 @@
 struct ret_em_prob {double chi_r;double ax; double ay;double az;};
-ret_em_prob Wr(const double* g, double t);
+//ret_em_prob Wr(const double* g, double t);
 ret_em_prob Wr(
         const double* g,
         double t,
