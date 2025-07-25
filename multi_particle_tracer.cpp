@@ -16,6 +16,7 @@
 #include "linespace.h"
 #include "vector3d.h"
 #include "chi_e.h"
+#include "timer_logger.h"
 
 using namespace std;
 using namespace SCATMECH;
@@ -35,9 +36,9 @@ inline double get_tf() { return 7.5   * tp0; }
 
 // =================== 文件名后缀定义 ===================
 const std::string output_suffix = "_coh_AB_";  // 可根据需要设为任何字符串，比如"_caseA"
-
+const std::string target_path = "/Users/josephzhang/Desktop/Coherence/data/";
 //constexpr int i_m1 = 300, j_m1 = 300, freq_m1 = 300;
-constexpr int i_m1 = 500, j_m1 = 500, freq_m1 = 100;
+constexpr int i_m1 = 10, j_m1 = 5, freq_m1 = 5;
 constexpr size_t N_GRID = static_cast<size_t>(i_m1) * j_m1 * freq_m1;
 
 // ========== Grid & Physics Parameters ==========
@@ -115,6 +116,8 @@ int func(double t, const double g[], double dg[], void*) {
 
 // ========== Main ==========
 int main() {
+    int total_steps = static_cast<int>((get_tf() - get_t0()) / get_dt());
+    TimerLogger timer(total_steps);
 
     // --- 1. Particle Initial State ---
     std::cout << "[LOG] Initializing particle states ..." << std::endl;
@@ -126,7 +129,7 @@ int main() {
 
     std::cout << "[LOG] Opening particle trace files ..." << std::endl;
     for (int pid = 0; pid < N_PARTICLES; ++pid) {
-        std::string filename = "~/Desktop/Coherence/data/"
+        std::string filename = target_path
                                + output_suffix
                                + "track_pid_"
                                + std::to_string(pid)
@@ -292,11 +295,9 @@ int main() {
         }
 
         // --- 6.3 Particle Trajectory Output ---
-        ++stepCount;
-        if (stepCount % 200 == 1) {
-            std::cout << "[LOG] steps=" << stepCount
-                      << " t/tp0=" << tNext / tp0
-                      << std::endl;
+        timer.nextStep();
+        if (timer.step() % 2 == 1) {
+            std::cout << timer.log(tNext / tp0) << std::endl;
         }
 
         for (int pid = 0; pid < N_PARTICLES; ++pid) {
@@ -320,7 +321,7 @@ int main() {
 
     // =================== 7.1 能谱 (Spectra) ===================
     std::cout << "[LOG] Calculating spectra ..." << std::endl;
-    std::string spectra_filename = "~/Desktop/Coherence/data/" + output_suffix + "spectra.dat";
+    std::string spectra_filename = target_path + output_suffix + "spectra.dat";
     FILE* fout1 = fopen(spectra_filename.c_str(), "w");
     if (!fout1) {
         std::cerr << "Error: Cannot open spectra.dat for writing!" << std::endl;
@@ -350,7 +351,7 @@ int main() {
 
     // =================== 7.2 角分布 (Angular Distribution) ===================
     std::cout << "[LOG] Calculating angular distribution ..." << std::endl;
-    std::string angdist_filename = "~/Desktop/Coherence/data/" + output_suffix + "angular_dist.dat";
+    std::string angdist_filename = target_path + output_suffix + "angular_dist.dat";
     FILE* fout2 = fopen(angdist_filename.c_str(), "w");
     if (!fout2) {
         std::cerr << "Error: Cannot open angular_dist.dat for writing!" << std::endl;
